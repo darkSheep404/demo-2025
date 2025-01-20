@@ -67,6 +67,10 @@
 <body>
 <div class="container mt-5">
     <h1 class="text-center">SQL Notebook(sqlLite)</h1>
+    <div class="text-center mb-3">
+        <button id="importBtn" class="btn btn-primary">Import Database</button>
+        <button id="exportBtn" class="btn btn-secondary">Export Database</button>
+    </div>
     <div id="notebook">
         <!-- Dynamic code blocks will be added here -->
     </div>
@@ -82,8 +86,7 @@
         };
 
         const SQL = await initSqlJs(config);
-        const db = new SQL.Database();
-        // Add the default SQL block
+        let db = new SQL.Database();
         const notebook = document.getElementById('notebook');
 
         // Function to create a new SQL code block
@@ -121,20 +124,16 @@
             });
 
             // Execute SQL logic
-            // 使用result[0]判断结果是不是数组,来handle多行语句不以select开头的情况
             executeBtn.addEventListener('click', () => {
                 const query = inputArea.value;
                 try {
                     const result = db.exec(query);
-                    if (query.trim().toLowerCase().startsWith('select') ||  result[0]) {
+                    if (query.trim().toLowerCase().startsWith('select') || result[0]) {
                         // Convert SELECT result to HTML table
                         outputArea.innerHTML = resultToTable(result);
                     } else {
-
                         // Show raw JSON for non-SELECT queries
                         outputArea.textContent = JSON.stringify(result, null, 2);
-
-                        // outputArea.textContent = result.columns + '\n' + result;
                     }
 
                     // Automatically add a new code block after execution
@@ -162,7 +161,7 @@
         function resultToTable(result) {
             if (result.length === 0) return 'No results found.';
 
-            const {columns, values} = result[0];
+            const { columns, values } = result[0];
             let html = '<table>';
             html += '<thead><tr>';
             columns.forEach(col => {
@@ -191,18 +190,47 @@
             SELECT * FROM test;
         `;
 
-// Set the default SQL to the input area
+        // Set the default SQL to the input area
         const inputArea = initialBlock.querySelector('textarea');
         inputArea.value = defaultSQL.trim();
 
-        // 默认 SQL 被赋值到 textarea 中，但 textarea 的内容不会自动同步到高亮区域（pre > code），因为高亮区域的更新是通过监听 input 事件触发的。由于默认 SQL 是直接赋值给 textarea 的，没有触发 input 事件，因此高亮区域没有更新
-        // 不加这一段 失焦时,执行过的默认sql就不显示了
         // Manually trigger the input event to update the highlight area
         const event = new Event('input', { bubbles: true });
         inputArea.dispatchEvent(event);
 
         // Focus on the first input area
         initialBlock.querySelector('textarea').focus();
+
+        // Import database
+        document.getElementById('importBtn').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.sqlite,.db';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const uint8Array = new Uint8Array(reader.result);
+                    db.close();
+                    db = new SQL.Database(uint8Array);
+                    alert('Database imported successfully!');
+                };
+                reader.readAsArrayBuffer(file);
+            };
+            input.click();
+        });
+
+        // Export database
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const data = db.export();
+            const blob = new Blob([data], { type: 'application/x-sqlite3' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'database.sqlite';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
     });
 </script>
 </body>
