@@ -10,16 +10,57 @@
         .code-block {
             margin-bottom: 20px;
         }
+
+        .code-container {
+            position: relative;
+        }
+
         .code-input {
             width: 100%;
             height: 100px;
             font-family: monospace;
+            background: transparent;
+            color: transparent;
+            caret-color: black;
+            position: relative;
+            z-index: 2;
         }
+
+        .code-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 0.375rem 0.75rem;
+            margin: 0;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+            background: white;
+        }
+
         .output {
             background: #f5f5f5;
             padding: 10px;
             border-radius: 5px;
             margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
@@ -28,9 +69,6 @@
     <h1 class="text-center">SQL Notebook</h1>
     <div id="notebook">
         <!-- Dynamic code blocks will be added here -->
-    </div>
-    <div class="text-center mt-3">
-        <button id="addBlockBtn" class="btn btn-primary">Add SQL Block</button>
     </div>
 </div>
 
@@ -45,19 +83,27 @@
 
         const SQL = await initSqlJs(config);
         const db = new SQL.Database();
-
+        // Add the default SQL block
         const notebook = document.getElementById('notebook');
-        const addBlockBtn = document.getElementById('addBlockBtn');
 
         // Function to create a new SQL code block
         function createCodeBlock() {
             const codeBlock = document.createElement('div');
             codeBlock.className = 'code-block';
 
+            // Input container
+            const inputContainer = document.createElement('div');
+            inputContainer.className = 'code-container';
+
             // Input area
             const inputArea = document.createElement('textarea');
             inputArea.className = 'code-input form-control';
             inputArea.placeholder = 'Enter SQL query here...';
+
+            // Code highlight area
+            const highlightArea = document.createElement('pre');
+            highlightArea.className = 'code-highlight';
+            highlightArea.innerHTML = '<code class="sql"></code>';
 
             // Execute button
             const executeBtn = document.createElement('button');
@@ -65,39 +111,98 @@
             executeBtn.textContent = 'Execute';
 
             // Output area
-            const outputArea = document.createElement('pre');
+            const outputArea = document.createElement('div');
             outputArea.className = 'output';
-            outputArea.innerHTML = '<code></code>';
+
+            // Real-time SQL input highlighting
+            inputArea.addEventListener('input', () => {
+                highlightArea.querySelector('code').textContent = inputArea.value;
+                hljs.highlightBlock(highlightArea.querySelector('code'));
+            });
 
             // Execute SQL logic
+            // 使用result[0]判断结果是不是数组,来handle多行语句不以select开头的情况
             executeBtn.addEventListener('click', () => {
                 const query = inputArea.value;
                 try {
                     const result = db.exec(query);
-                    outputArea.querySelector('code').textContent = JSON.stringify(result, null, 2);
-                    hljs.highlightBlock(outputArea.querySelector('code'));
+                    if (query.trim().toLowerCase().startsWith('select') ||  result[0]) {
+                        // Convert SELECT result to HTML table
+                        outputArea.innerHTML = resultToTable(result);
+                    } else {
+
+                        // Show raw JSON for non-SELECT queries
+                        outputArea.textContent = JSON.stringify(result, null, 2);
+
+                        // outputArea.textContent = result.columns + '\n' + result;
+                    }
+
+                    // Automatically add a new code block after execution
+                    const newBlock = createCodeBlock();
+                    notebook.appendChild(newBlock);
+
+                    // Focus on the new input area
+                    newBlock.querySelector('textarea').focus();
                 } catch (error) {
-                    outputArea.querySelector('code').textContent = error.message;
-                    hljs.highlightBlock(outputArea.querySelector('code'));
+                    outputArea.textContent = error.message;
                 }
             });
 
             // Append elements to the code block
-            codeBlock.appendChild(inputArea);
+            inputContainer.appendChild(inputArea);
+            inputContainer.appendChild(highlightArea);
+            codeBlock.appendChild(inputContainer);
             codeBlock.appendChild(executeBtn);
             codeBlock.appendChild(outputArea);
 
             return codeBlock;
         }
 
-        // Add a new SQL code block when the button is clicked
-        addBlockBtn.addEventListener('click', () => {
-            const newBlock = createCodeBlock();
-            notebook.appendChild(newBlock);
-        });
+        // Function to convert SELECT result to HTML table
+        function resultToTable(result) {
+            if (result.length === 0) return 'No results found.';
+
+            const {columns, values} = result[0];
+            let html = '<table>';
+            html += '<thead><tr>';
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead>';
+            html += '<tbody>';
+            values.forEach(row => {
+                html += '<tr>';
+                row.forEach(cell => {
+                    html += `<td>${cell}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            return html;
+        }
 
         // Add the first block by default
-        notebook.appendChild(createCodeBlock());
+        const initialBlock = createCodeBlock();
+        notebook.appendChild(initialBlock);
+
+        const defaultSQL = `
+            CREATE TABLE test (column_a, column_b);
+            INSERT INTO test VALUES (11,11), (22,22);
+            SELECT * FROM test;
+        `;
+
+// Set the default SQL to the input area
+        const inputArea = initialBlock.querySelector('textarea');
+        inputArea.value = defaultSQL.trim();
+
+        // 默认 SQL 被赋值到 textarea 中，但 textarea 的内容不会自动同步到高亮区域（pre > code），因为高亮区域的更新是通过监听 input 事件触发的。由于默认 SQL 是直接赋值给 textarea 的，没有触发 input 事件，因此高亮区域没有更新
+        // 不加这一段 失焦时,执行过的默认sql就不显示了
+        // Manually trigger the input event to update the highlight area
+        const event = new Event('input', { bubbles: true });
+        inputArea.dispatchEvent(event);
+
+        // Focus on the first input area
+        initialBlock.querySelector('textarea').focus();
     });
 </script>
 </body>
