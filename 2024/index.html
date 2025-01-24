@@ -125,85 +125,106 @@
 </head>
 <body>
 
-<div class="timeline">
-    <div class="container left">
-        <div class="content">
-            <h2>1月</h2>
-            <p>越南河内旅游三天</p>
-            <span class="tag travel">旅行</span>
-            <img src="https://sheepnote.oss-cn-shenzhen.aliyuncs.com/ita/image-20240423210713409.png" alt="越南河内旅游">
-        </div>
-    </div>
-    <div class="container right">
-        <div class="content">
-            <h2>3月</h2>
-            <p>厦门旅游三天</p>
-            <span class="tag travel">旅行</span>
-        </div>
-    </div>
-    <div class="container left">
-        <div class="content">
-            <h2>5月02日</h2>
-            <p>香港旅游陪陈沪安旅游两天</p>
-            <span class="tag travel">旅行</span>
-        </div>
-    </div>
-    <div class="container right">
-        <div class="content">
-            <h2>7月28日</h2>
-            <p>电鸡进城：第一次跟外卖小哥后面走了梅花东路进城，解锁珠海市区大部分</p>
-            <span class="tag">电鸡进城</span>
-        </div>
-    </div>
-    <div class="container left">
-        <div class="content">
-            <h2>9月2日</h2>
-            <p>电鸡进城：抵达坦洲十四村夜市，第一次电鸡到中山</p>
-            <span class="tag">电鸡进城</span>
-        </div>
-    </div>
-    <div class="container right">
-        <div class="content">
-            <h2>9月3日</h2>
-            <p>1299购买大疆无人机</p>
-            <span class="tag drone">无人机</span>
-        </div>
-    </div>
-    <div class="container left">
-        <div class="content">
-            <h2>9月19日</h2>
-            <p>升职加薪</p>
-        </div>
-    </div>
-    <div class="container right">
-        <div class="content">
-            <h2>9月26日</h2>
-            <p>2300购买60km续航、50码的电摩</p>
-            <span class="tag e-bike">电摩</span>
-        </div>
-    </div>
-    <div class="container left">
-        <div class="content">
-            <h2>10月</h2>
-            <p>陪凯宇两口子去澳门</p>
-            <span class="tag travel">旅行</span>
-        </div>
-    </div>
-    <div class="container right">
-        <div class="content">
-            <h2>11月23日</h2>
-            <p>电鸡进城：从珠海骑电鸡三个小时开到中山站（火炬开发区）</p>
-            <span class="tag">电鸡进城</span>
-        </div>
-    </div>
-    <div class="container left">
-        <div class="content">
-            <h2>12月</h2>
-            <p>电鸡进城：电鸡到中山三乡</p>
-            <span class="tag">电鸡进城</span>
-        </div>
-    </div>
-</div>
+<div class="timeline" id="timeline"></div>
+
+<script>
+    // 定义时间轴数据
+    const timelineData = [
+        {
+            date: "1月",
+            content: "越南河内旅游三天",
+            tags: ["travel"],
+            image: "https://sheepnote.oss-cn-shenzhen.aliyuncs.com/ita/image-20240423210713409.png"
+        },
+        {
+            date: "3月",
+            content: "厦门旅游三天",
+            tags: ["travel"]
+        },
+        {
+            date: "5月02日",
+            content: "香港旅游陪陈沪安旅游两天",
+            tags: ["travel"]
+        },
+        {
+            date: "7月28日",
+            content: "电鸡进城：第一次跟外卖小哥后面走了梅花东路进城，解锁珠海市区大部分",
+            tags: ["电鸡进城"]
+        },
+        {
+            date: "9月2日",
+            content: "电鸡进城：抵达坦洲十四村夜市，第一次电鸡到中山",
+            tags: ["电鸡进城"]
+        },
+        {
+            date: "9月3日",
+            content: "1299购买大疆无人机",
+            tags: ["drone"]
+        },
+        {
+            date: "9月19日",
+            content: "升职加薪",
+            tags: []
+        },
+        {
+            date: "9月26日",
+            content: "2300购买60km续航、50码的电摩",
+            tags: ["e-bike"]
+        },
+        {
+            date: "10月",
+            content: "陪凯宇两口子去澳门",
+            tags: ["travel"]
+        },
+        {
+            date: "11月23日",
+            content: "电鸡进城：从珠海骑电鸡三个小时开到中山站（火炬开发区）",
+            tags: ["电鸡进城"]
+        },
+        {
+            date: "12月",
+            content: "电鸡进城：电鸡到中山三乡",
+            tags: ["电鸡进城"]
+        }
+    ];
+
+    // 生成时间轴内容
+    const timeline = document.getElementById("timeline");
+    timelineData.forEach((item, index) => {
+        const container = document.createElement("div");
+        container.className = `container ${index % 2 === 0 ? "left" : "right"}`;
+
+        const content = document.createElement("div");
+        content.className = "content";
+
+        const title = document.createElement("h2");
+        title.textContent = item.date;
+        content.appendChild(title);
+
+        const text = document.createElement("p");
+        text.textContent = item.content;
+        content.appendChild(text);
+
+        // 添加标签
+        item.tags.forEach(tag => {
+            const tagElement = document.createElement("span");
+            tagElement.className = `tag ${tag}`;
+            tagElement.textContent = tag === "travel" ? "旅行" : tag === "drone" ? "无人机" : tag === "e-bike" ? "电摩" : tag;
+            content.appendChild(tagElement);
+        });
+
+        // 添加图片
+        if (item.image) {
+            const image = document.createElement("img");
+            image.src = item.image;
+            image.alt = item.content;
+            content.appendChild(image);
+        }
+
+        container.appendChild(content);
+        timeline.appendChild(container);
+    });
+</script>
 
 </body>
 </html>
